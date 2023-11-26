@@ -199,7 +199,7 @@ class UserViewSet(UserViewSet):
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
-            detail=False, permission_classes=[permissions.IsAuthenticated]
+        detail=False, permission_classes=[permissions.IsAuthenticated]
     )
     def subscriptions(self, request):
         user = request.user
