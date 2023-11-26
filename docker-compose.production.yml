@@ -2,17 +2,18 @@
 version: '3'
 
 volumes:
-  pg_data_production:
+  foodgram_pg_data_production:
   static_volume:
   media:
 
 # Всё отличие — заменяем build на image и указываем, какой образ использовать
 services:
+
   db:
     image: postgres:13.10
     env_file: .env
     volumes:
-      - pg_data_production:/var/lib/postgresql/data
+      - foodgram_pg_data_production:/var/lib/postgresql/data
 
   backend:
     image: kidots/foodgram_backend
