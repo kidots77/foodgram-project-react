@@ -1,11 +1,79 @@
 from colorfield.fields import ColorField
+from django.db import models
+from django.db.models import F, Q, UniqueConstraint
 from django.core.validators import (
     RegexValidator
 )
-from django.db import models
-from django.db.models import UniqueConstraint
 
-from users.models import User
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
+
+from .validators import validate_username
+
+
+class User(AbstractUser):
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name', )
+    first_name = models.CharField(
+        verbose_name='Имя',
+        max_length=150
+    )
+    last_name = models.CharField(
+        max_length=150,
+        verbose_name='Фамилия',
+    )
+    email = models.EmailField(
+        max_length=254,
+        verbose_name='email',
+        unique=True,
+    )
+    username = models.CharField(
+        verbose_name='username',
+        max_length=150,
+        unique=True,
+        validators=(UnicodeUsernameValidator(), validate_username)
+    )
+
+    class Meta:
+        ordering = ('username',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return self.username
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+        related_name='follower',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Подписчик',
+        related_name='following'
+    )
+
+    class Meta:
+        ordering = ('user',)
+        constraints = [
+            UniqueConstraint(
+                fields=('user', 'author'),
+                name='unique_follow'
+            ),
+            models.CheckConstraint(
+                check=~Q(user=F('author')),
+                name='no_self_follow'
+            )
+        ]
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self) -> str:
+        return f"{self.user} подписан на {self.author}"
 
 
 class Ingredient(models.Model):
@@ -20,7 +88,8 @@ class Ingredient(models.Model):
     )
 
     class Meta():
-        verbose_name = 'Ингредиенты'
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'measurement_unit'],
@@ -46,7 +115,7 @@ class Tag(models.Model):
         unique=True,
         validators=[
             RegexValidator(
-                regex="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+                regex="^#[A-Fa-f0-9]{6})$",
                 message='Вы ввели несуществующий цвет!',
             )
         ],
@@ -59,7 +128,8 @@ class Tag(models.Model):
 
     class Meta:
         ordering = ('name',)
-        verbose_name = 'Тег'
+        verbose_name = 'Тег',
+        verbose_name_plural = 'Тэги'
 
     def __str__(self):
         return self.name
@@ -100,7 +170,8 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ('-pub_date',)
-        verbose_name = 'Рецепт'
+        verbose_name = 'Рецепт',
+        verbose_name_plural = 'Рецепты'
 
     def __str__(self):
         return self.name
@@ -121,6 +192,8 @@ class FavoriteShoppingCart(models.Model):
 
     class Meta:
         abstract = True
+        verbose_name = 'Рецепт в списке покупок'
+        verbose_name_plural = 'Рецепты в списке покупок'
         constraints = [
             UniqueConstraint(
                 fields=('user', 'recipe'),
@@ -136,14 +209,36 @@ class Favorite(FavoriteShoppingCart):
     class Meta(FavoriteShoppingCart.Meta):
         default_related_name = 'favorites'
         verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранное'
 
 
-class ShoppingCart(FavoriteShoppingCart):
-    """ Модель списка покупок. """
+class ShoppingCart(models.Model):
+    """ Модель Корзина покупок """
 
-    class Meta(FavoriteShoppingCart.Meta):
-        default_related_name = 'shopping_list'
-        verbose_name = 'Корзина'
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shopping_cart',
+        verbose_name='Пользователь',
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='shopping_cart',
+        verbose_name='Рецепт',
+    )
+
+    class Meta:
+        verbose_name = 'Корзина покупок'
+        verbose_name_plural = 'Корзина покупок'
+        constraints = [
+            UniqueConstraint(
+                fields=['user', 'recipe'], name='unique_shopping_cart'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} добавил "{self.recipe}" в Корзину покупок'
 
 
 class IngredientRecipe(models.Model):
@@ -160,12 +255,13 @@ class IngredientRecipe(models.Model):
         related_name='ingredienttorecipe'
     )
     amount = models.PositiveSmallIntegerField(
-        verbose_name='Количество ингредиента'
+        verbose_name='Количество ингредиента',
     )
 
     class Meta:
         ordering = ('-id', )
         verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Количество ингредиента в рецепте'
 
     def __str__(self):
         return (
