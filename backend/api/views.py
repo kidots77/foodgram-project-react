@@ -138,9 +138,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).order_by('ingredient__name').values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(amount=Sum('amount'))
-
-        shopping_list = send_message(ingredients)
-
+        user_shopping_cart_items = ShoppingCart.objects.filter(
+            user=User.objects.get(username=user.username)
+        )
+        user_recipes_in_cart = [
+            item.recipe for item in user_shopping_cart_items
+        ]
+        shopping_list = send_message(ingredients, user_recipes_in_cart)
         filename = f'{user.username}_shopping_list.txt'
         response = FileResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename={filename}'
