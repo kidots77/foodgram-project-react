@@ -1,6 +1,6 @@
+import re
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
-import re
 
 
 def validate_username(value):
