@@ -37,7 +37,7 @@
 
 - Выполните команду: ``` python manage.py runserver ```
 
-- По желанию можете воспользоваться заготовленными данными для тегов и ингредиентов с помощью команды: ``` python manage.py import_json_data ```
+- По желанию можете воспользоваться заготовленными данными для тегов и ингредиентов с помощью команд: ``` python manage.py import_ingredients_data ``` и ``` python manage.py import_tags_data ```
 
 - В проекте находится файл env.example с примерами данных
 
