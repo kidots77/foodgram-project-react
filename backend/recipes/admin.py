@@ -45,8 +45,8 @@ class RecipeAdmin(admin.ModelAdmin):
     empty_value_display = 'Пусто'
 
     @admin.display(description='Избранное')
-    def get_favorites(self, obj):
-        return obj.favorites.count()
+    def get_favorites(self, recipe):
+        return recipe.favorites.count()
 
     @admin.display(description='Продукты')
     def get_ingredients(self, obj):
@@ -59,15 +59,15 @@ class RecipeAdmin(admin.ModelAdmin):
         ))
 
     @admin.display(description='Изображение')
-    def get_image(self, obj):
+    def get_image(self, recipe):
         return mark_safe(
-            f'<img src="{obj.image.url}" width="50" height="50" />'
+            f'<img src="{recipe.image.url}" width="50" height="50" />'
         )
 
     @admin.display(description='Теги')
-    def get_tags(self, obj):
+    def get_tags(self, recipe):
         return ', '.join([
-            tag.name for tag in obj.tags.all()
+            tag.name for tag in recipe.tags.all()
         ])
 
 
@@ -86,11 +86,11 @@ class TagAdmin(admin.ModelAdmin):
     list_filter = ('name', )
     empty_value_display = 'Пусто'
 
-    def display_color(self, obj):
+    def display_color(self, tag):
         return format_html(
             '<div style="width: 30px; height: 30px;'
             'background-color: {};"></div>',
-            obj.color
+            tag.color
         )
     display_color.short_description = 'Цвет'
 
@@ -146,13 +146,13 @@ class UserAdmin(UserAdmin):
     empty_value_display = 'Пусто'
 
     @admin.display(description='Подписки')
-    def get_subscriptions_count(self, obj):
-        return obj.following.count()
+    def get_subscriptions_count(self, user):
+        return user.following.count()
 
     @admin.display(description='Подписчики')
-    def get_followers_count(self, obj):
-        return obj.follower.count()
+    def get_followers_count(self, user):
+        return user.follower.count()
 
     @admin.display(description='Рецепты')
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
+    def get_recipes_count(self, user):
+        return user.recipes.count()
