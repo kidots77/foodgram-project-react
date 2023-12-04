@@ -1,12 +1,12 @@
+from django.db.models import Sum
 from colorfield.fields import ColorField
-from django.db import models
-from django.db.models import F, Q, UniqueConstraint
 from django.core.validators import (
     RegexValidator
 )
-
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.db import models
+from django.db.models import F, Q, UniqueConstraint
 
 from .validators import validate_username
 
@@ -31,7 +31,7 @@ class User(AbstractUser):
         verbose_name='username',
         max_length=150,
         unique=True,
-        validators=(UnicodeUsernameValidator(), validate_username)
+        validators=(validate_username,)
     )
 
     class Meta:
@@ -47,13 +47,13 @@ class Follow(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор',
+        verbose_name='Подписчик',
         related_name='follower',
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Подписчик',
+        verbose_name='Автор',
         related_name='following'
     )
 
@@ -79,7 +79,7 @@ class Follow(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=200,
-        verbose_name='Название ингредиента',
+        verbose_name='Название продукта',
         db_index=True
     )
     measurement_unit = models.CharField(
@@ -88,8 +88,8 @@ class Ingredient(models.Model):
     )
 
     class Meta():
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
+        verbose_name = 'Продукт'
+        verbose_name_plural = 'Продукты'
         constraints = [
             models.UniqueConstraint(
                 fields=['name', 'measurement_unit'],
@@ -103,7 +103,7 @@ class Ingredient(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(
-        verbose_name='Название тега',
+        verbose_name='Название',
         max_length=200,
         db_index=True,
         unique=True
@@ -122,14 +122,14 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         max_length=200,
-        verbose_name='Slug',
+        verbose_name='Адрес',
         unique=True
     )
 
     class Meta:
         ordering = ('name',)
         verbose_name = 'Тег',
-        verbose_name_plural = 'Тэги'
+        verbose_name_plural = 'Теги'
 
     def __str__(self):
         return self.name
@@ -138,12 +138,12 @@ class Tag(models.Model):
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
-        verbose_name='Автор рецепта',
+        verbose_name='Автор',
         on_delete=models.CASCADE,
         related_name='recipes'
     )
     name = models.CharField(
-        verbose_name='Название рецепта',
+        verbose_name='Название',
         max_length=200,
     )
     image = models.ImageField(
@@ -153,7 +153,7 @@ class Recipe(models.Model):
     text = models.TextField(verbose_name='Описание')
     ingredients = models.ManyToManyField(
         Ingredient,
-        verbose_name='Ингредиенты',
+        verbose_name='Продукты',
         through='IngredientRecipe'
     )
     tags = models.ManyToManyField(
@@ -212,9 +212,7 @@ class Favorite(FavoriteShoppingCart):
         verbose_name_plural = 'Избранное'
 
 
-class ShoppingCart(models.Model):
-    """ Модель Корзина покупок """
-
+class ShoppingCart(FavoriteShoppingCart):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -242,11 +240,10 @@ class ShoppingCart(models.Model):
 
 
 class IngredientRecipe(models.Model):
-    """ Ингридиенты рецепта. """
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='Ингредиент'
+        verbose_name='Продукт'
     )
     recipe = models.ForeignKey(
         Recipe,
@@ -255,16 +252,24 @@ class IngredientRecipe(models.Model):
         related_name='ingredienttorecipe'
     )
     amount = models.PositiveSmallIntegerField(
-        verbose_name='Количество ингредиента',
+        verbose_name='Мера',
     )
 
     class Meta:
-        ordering = ('-id', )
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Количество ингредиента в рецепте'
+        ordering = ('recipe', )
+        verbose_name = 'Продукт'
+        verbose_name_plural = 'Количество продуктов в рецепте'
 
     def __str__(self):
         return (
             f'{self.ingredient.name} :: {self.ingredient.measurement_unit}'
             f' - {self.amount} '
         )
+
+    def get_ingredients_for_user_shopping_cart(self, user):
+        ingredients = IngredientRecipe.objects.filter(
+            recipe__shopping_cart__user=user
+        ).order_by('ingredient__name').values(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(amount=Sum('amount'))
+        return ingredients

@@ -44,32 +44,31 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = (IngredientInline,)
     empty_value_display = 'Пусто'
 
+    @admin.display(description='Избранное')
     def get_favorites(self, obj):
         return obj.favorites.count()
-    get_favorites.short_description = 'Избранное'
 
+    @admin.display(description='Продукты')
     def get_ingredients(self, obj):
-        ingredients_list = [
-            f"{ingredient.ingredient.name} - "
-            f"{ingredient.amount} {ingredient.ingredient.measurement_unit}"
+        return mark_safe('<br>'.join(
+            f'{ingredient.ingredient.name} - '
+            f'{ingredient.amount} {ingredient.ingredient.measurement_unit}'
             for ingredient in obj.ingredients.through.objects.filter(
                 recipe=obj
             )
-        ]
-        return mark_safe('<br>'.join(ingredients_list))
-    get_ingredients.short_description = 'Ингредиенты'
+        ))
 
+    @admin.display(description='Изображение')
     def get_image(self, obj):
         return mark_safe(
             f'<img src="{obj.image.url}" width="50" height="50" />'
         )
-    get_image.short_description = 'Изображение'
 
+    @admin.display(description='Теги')
     def get_tags(self, obj):
         return ', '.join([
             tag.name for tag in obj.tags.all()
         ])
-    get_tags.short_description = 'Теги'
 
 
 @admin.register(Ingredient)
@@ -82,7 +81,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_color', 'slug')
+    list_display = ('name', 'color', 'display_color', 'slug')
     search_fields = ('name', 'slug')
     list_filter = ('name', )
     empty_value_display = 'Пусто'
@@ -112,33 +111,21 @@ class ShoppingCartAdmin(admin.ModelAdmin):
     empty_value_display = 'Пусто'
 
 
-class HasSubscriptionsFilter(admin.SimpleListFilter):
-    title = 'Есть подписки'
-    parameter_name = 'has_subscriptions'
+class SubscriptionsFollowersFilter(admin.SimpleListFilter):
+    title = 'Подписчики и подписки'
+    parameter_name = 'subscriptions_followers'
 
     def lookups(self, request, model_admin):
         return (
-            ('yes', 'Да'),
+            ('has_subscriptions', 'Есть подписки'),
+            ('has_followers', 'Есть подписчики'),
         )
 
     def queryset(self, request, queryset):
         value = self.value()
-        if value == 'yes':
+        if value == 'has_subscriptions':
             return queryset.filter(following__isnull=False).distinct()
-
-
-class HasFollowersFilter(admin.SimpleListFilter):
-    title = 'Есть подписчики'
-    parameter_name = 'has_followers'
-
-    def lookups(self, request, model_admin):
-        return (
-            ('yes', 'Да'),
-        )
-
-    def queryset(self, request, queryset):
-        value = self.value()
-        if value == 'yes':
+        if value == 'has_followers':
             return queryset.filter(follower__isnull=False).distinct()
 
 
@@ -154,18 +141,18 @@ class UserAdmin(UserAdmin):
         'get_recipes_count',
     )
     search_fields = ('username', 'email', )
-    list_filter = (HasFollowersFilter, HasSubscriptionsFilter)
+    list_filter = (SubscriptionsFollowersFilter,)
     ordering = ('username', )
     empty_value_display = 'Пусто'
 
+    @admin.display(description='Подписки')
     def get_subscriptions_count(self, obj):
         return obj.following.count()
-    get_subscriptions_count.short_description = 'Число подписок'
 
+    @admin.display(description='Подписчики')
     def get_followers_count(self, obj):
         return obj.follower.count()
-    get_followers_count.short_description = 'Число подписчиков'
 
+    @admin.display(description='Рецепты')
     def get_recipes_count(self, obj):
         return obj.recipes.count()
-    get_recipes_count.short_description = 'Число рецептов'
