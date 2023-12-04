@@ -29,11 +29,11 @@ class UserSerializer(UserSrlz):
             'is_subscribed'
         )
 
-    def get_is_subscribed(self, obj):
+    def get_is_subscribed(self, user):
         request = self.context.get('request')
         if request.user.is_anonymous:
             return False
-        return obj.following.filter(user=request.user).exists()
+        return user.following.filter(user=request.user).exists()
 
 
 class SubscribeListSerializer(UserSerializer):
@@ -59,14 +59,14 @@ class SubscribeListSerializer(UserSerializer):
             )
         return data
 
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
+    def get_recipes_count(self, user):
+        return user.recipes.count()
 
-    def get_recipes(self, obj):
+    def get_recipes(self, user):
         request = self.context.get('request')
         limit = int(request.GET.get('recipes_limit', 10**10))
         return RecipeShortSerializer(
-            obj.recipes.all()[:limit], many=True, read_only=True
+            user.recipes.all()[:limit], many=True, read_only=True
         ).data
 
 

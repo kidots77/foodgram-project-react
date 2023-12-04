@@ -3,7 +3,7 @@ from datetime import datetime
 
 def make_shopping_list(ingredients, recipes):
     today = datetime.today()
-    shopping_list = [
+    return '\n'.join([
         f'Дата: {today:%Y-%m-%d}',
         'Список покупок:',
         *[
@@ -13,5 +13,4 @@ def make_shopping_list(ingredients, recipes):
             f'{ingredient["amount"]}'
             for i, ingredient in enumerate(ingredients)
         ], 'Список рецептов:', *['- ' + recipe.name for recipe in recipes]
-    ]
-    return '\n'.join(shopping_list)
+    ])
