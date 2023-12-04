@@ -5,7 +5,7 @@ def make_shopping_list(ingredients, recipes):
     today = datetime.today()
     shopping_list = [
         f'Дата: {today:%Y-%m-%d}',
-        'Закупочный список:',
+        'Список покупок:',
         *[
             f'{i+1}.'
             f'{ingredient["ingredient__name"].capitalize()}'
