@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 PATTERN = r'^[\w.@+-]+$'
 
+
 def validate_username(username):
     invalid_characters = re.findall(r'[^\w.@+-]', username)
     if invalid_characters:

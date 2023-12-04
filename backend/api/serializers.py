@@ -173,14 +173,14 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
                 'Время приготовления должно быть больше указанного!')
         return cooking_time
 
-    @staticmethod 
-    def validate_unique_items(items, field_name): 
+    @staticmethod
+    def validate_unique_items(items, field_name):
         duplicate_list = [item for item in items if items.count(item) > 1]
         if duplicate_list:
-            raise serializers.ValidationError( 
+            raise serializers.ValidationError(
                 f'Ингредиенты {duplicate_list} не могут повторяться!'
-            ) 
-        return items 
+            )
+        return items
 
     def validate(self, data):
         validated_data = super().validate(data)

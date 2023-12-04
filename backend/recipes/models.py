@@ -1,12 +1,10 @@
-from django.db.models import Sum
 from colorfield.fields import ColorField
 from django.core.validators import (
     RegexValidator
 )
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
-from django.db.models import F, Q, UniqueConstraint
+from django.db.models import F, Q, UniqueConstraint, Sum
 
 from .validators import validate_username
 

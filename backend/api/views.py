@@ -39,6 +39,7 @@ from .serializers import (
 )
 from .utils import make_shopping_list
 
+
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -124,7 +125,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         user = request.user
         if not user.shopping_cart.exists():
             return Response(status=HTTP_400_BAD_REQUEST)
-        return FileResponse(make_shopping_list(IngredientRecipe().get_ingredients_for_user_shopping_cart(user), [item.recipe for item in user.shopping_cart.all()]), content_type='text/plain', filename=f'{user.username}_shopping_list.txt')
+        return FileResponse(
+            make_shopping_list(
+                IngredientRecipe().get_ingredients_for_user_shopping_cart(
+                    user
+                ), [
+                    item.recipe for item in user.shopping_cart.all()
+                ]
+            ), content_type='text/plain',
+            filename=f'{user.username}_shopping_list.txt')
 
 
 class UserViewSet(Uservws):
@@ -144,7 +153,6 @@ class UserViewSet(Uservws):
         methods=['POST', 'DELETE'],
         permission_classes=[IsAuthenticated],
     )
-
     def subscribe(self, request, id):
         user = request.user
         author = get_object_or_404(User, pk=id)
