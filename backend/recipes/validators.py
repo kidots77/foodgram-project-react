@@ -8,7 +8,9 @@ PATTERN = r'^[\w.@+-]+$'
 def validate_username(username):
     invalid_characters = set(re.findall(r'[^\w.@+-]', username))
     if invalid_characters:
-        error_message = ('Введите корректный логин. Он может содержать только буквы, цифры и следущие знаки: @/./+/-/_'
+        error_message = ('Введите корректный логин. '
+                         'Он может содержать только буквы, '
+                         'цифры и следущие знаки: @/./+/-/_'
                          'Текущий логин содержит недопустимые символы:\n')
         for index, char in enumerate(invalid_characters, start=1):
             if char != ' ':
