@@ -1,6 +1,7 @@
 from colorfield.fields import ColorField
 from django.core.validators import (
-    RegexValidator
+    RegexValidator,
+    MinValueValidator
 )
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -251,12 +252,22 @@ class IngredientRecipe(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Мера',
+        default=1,
+        validators=(
+            MinValueValidator(
+                1, message='Мин. количество меры - 1'
+            ),
+        )
     )
 
     class Meta:
         ordering = ('recipe', )
         verbose_name = 'Продукт'
         verbose_name_plural = 'Количество продуктов в рецепте'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_ingredient')]
 
     def __str__(self):
         return (
