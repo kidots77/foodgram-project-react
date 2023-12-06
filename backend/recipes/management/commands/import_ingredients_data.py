@@ -11,6 +11,6 @@ class Command(BaseCommand):
             'data/ingredients.json', encoding='utf-8'
         ) as data_file_ingredients:
             ingredient_data = json.loads(data_file_ingredients.read())
-            Ingredient.objects.bulk_create([
+            Ingredient.objects.bulk_create(
                 Ingredient(**data) for data in ingredient_data
-            ], batch_size=1000)
+            )

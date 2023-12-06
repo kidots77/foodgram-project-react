@@ -78,7 +78,7 @@ class Follow(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=200,
-        verbose_name='Название продукта',
+        verbose_name='Название',
         db_index=True
     )
     measurement_unit = models.CharField(
@@ -121,7 +121,7 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         max_length=200,
-        verbose_name='Адрес',
+        verbose_name='Строка идентификатор',
         unique=True
     )
 
@@ -212,27 +212,10 @@ class Favorite(FavoriteShoppingCart):
 
 
 class ShoppingCart(FavoriteShoppingCart):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='shopping_cart',
-        verbose_name='Пользователь',
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='shopping_cart',
-        verbose_name='Рецепт',
-    )
-
-    class Meta:
+    class Meta(FavoriteShoppingCart.Meta):
+        default_related_name = 'shopping_cart'
         verbose_name = 'Корзина покупок'
-        verbose_name_plural = 'Корзина покупок'
-        constraints = [
-            UniqueConstraint(
-                fields=['user', 'recipe'], name='unique_shopping_cart'
-            )
-        ]
+        verbose_name_plural = 'Корзины покупок'
 
     def __str__(self):
         return f'{self.user} добавил "{self.recipe}" в Корзину покупок'
@@ -263,7 +246,7 @@ class IngredientRecipe(models.Model):
     class Meta:
         ordering = ('recipe', )
         verbose_name = 'Продукт'
-        verbose_name_plural = 'Количество продуктов в рецепте'
+        verbose_name_plural = 'Меры продуктов в рецепте'
         constraints = [
             models.UniqueConstraint(
                 fields=['recipe', 'ingredient'],
@@ -272,13 +255,12 @@ class IngredientRecipe(models.Model):
     def __str__(self):
         return (
             f'{self.ingredient.name} :: {self.ingredient.measurement_unit}'
-            f' - {self.amount} '
+            f' - {self.amount}'
         )
 
     def get_ingredients_for_user_shopping_cart(self, user):
-        ingredients = IngredientRecipe.objects.filter(
+        return IngredientRecipe.objects.filter(
             recipe__shopping_cart__user=user
         ).order_by('ingredient__name').values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(amount=Sum('amount'))
-        return ingredients

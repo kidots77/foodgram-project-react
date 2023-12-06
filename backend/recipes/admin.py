@@ -49,13 +49,12 @@ class RecipeAdmin(admin.ModelAdmin):
         return recipe.favorites.count()
 
     @admin.display(description='Продукты')
-    def get_ingredients(self, obj):
+    def get_ingredients(self, recipe):
         return mark_safe('<br>'.join(
-            f'{ingredient.ingredient.name} - '
-            f'{ingredient.amount} {ingredient.ingredient.measurement_unit}'
-            for ingredient in obj.ingredients.through.objects.filter(
-                recipe=obj
-            )
+            f'{ingredient_item.ingredient.name} - '
+            f'{ingredient_item.amount} '
+            f'{ingredient_item.ingredient.measurement_unit}'
+            for ingredient_item in recipe.ingredienttorecipe.all()
         ))
 
     @admin.display(description='Изображение')
@@ -66,9 +65,9 @@ class RecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Теги')
     def get_tags(self, recipe):
-        return ', '.join([
-            tag.name for tag in recipe.tags.all()
-        ])
+        return mark_safe(
+            '<br>'.join(tag.name for tag in recipe.tags.all())
+        )
 
 
 @admin.register(Ingredient)
@@ -86,13 +85,13 @@ class TagAdmin(admin.ModelAdmin):
     list_filter = ('name', )
     empty_value_display = 'Пусто'
 
+    @admin.display(description='Цвет')
     def display_color(self, tag):
         return format_html(
             '<div style="width: 30px; height: 30px;'
             'background-color: {};"></div>',
             tag.color
         )
-    display_color.short_description = 'Цвет'
 
 
 @admin.register(Favorite)
@@ -121,12 +120,12 @@ class SubscriptionsFollowersFilter(admin.SimpleListFilter):
             ('has_followers', 'Есть подписчики'),
         )
 
-    def queryset(self, request, queryset):
+    def queryset(self, request, users):
         value = self.value()
         if value == 'has_subscriptions':
-            return queryset.filter(following__isnull=False).distinct()
+            return users.filter(following__isnull=False).exists()
         if value == 'has_followers':
-            return queryset.filter(follower__isnull=False).distinct()
+            return users.filter(follower__isnull=False).exists()
 
 
 @admin.register(User)

@@ -2,7 +2,7 @@
 from django.http.response import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as Uservws
+from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import (
     status,
     viewsets,
@@ -136,17 +136,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             filename=f'{user.username}_shopping_list.txt')
 
 
-class UserViewSet(Uservws):
+class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
     pagination_class = PagePagination
 
     def get_permissions(self):
-        if self.action == 'me':
-            return [IsAuthenticated()]
-        else:
-            return super().get_permissions()
+        return [
+            IsAuthenticated()
+        ] if self.action == 'me' else super().get_permissions()
 
     @action(
         detail=True,

@@ -3,8 +3,8 @@ from drf_extra_fields.fields import Base64ImageField
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as UserSrlz
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
+from rest_framework.exceptions import ValidationError
 
 from recipes.models import (
     Ingredient,
@@ -13,6 +13,8 @@ from recipes.models import (
     Tag,
     User
 )
+
+from foodgram.settings import MIN_COOKING_TIME
 
 
 class UserSerializer(UserSrlz):
@@ -168,17 +170,18 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         )
 
     def validate_cooking_time(self, cooking_time):
-        if cooking_time < 1:
+        if cooking_time < MIN_COOKING_TIME:
             raise serializers.ValidationError(
-                'Время приготовления должно быть больше указанного!')
+                f'Время приготовления должно не меньше '
+                f'{MIN_COOKING_TIME} мин.')
         return cooking_time
 
     @staticmethod
     def validate_unique_items(items, field_name):
-        duplicate_list = [item for item in items if items.count(item) > 1]
-        if duplicate_list:
+        duplicates = [item for item in items if items.count(item) > 1]
+        if duplicates:
             raise serializers.ValidationError(
-                f'Ингредиенты {duplicate_list} не могут повторяться!'
+                f'Продукты {duplicates} повторяются!'
             )
         return items
 
@@ -187,15 +190,15 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         ingredients = validated_data['ingredients']
         if not ingredients:
             raise serializers.ValidationError(
-                'Нужен хотя бы один ингредиент!'
+                'Нужен хотя бы один продукт!'
             )
         for ingredient in ingredients:
             if int(ingredient['amount']) <= 0:
                 raise serializers.ValidationError(
-                    'Количество ингредиента должно быть больше 0!'
+                    'Мера продукта должна быть больше 0!'
                 )
         self.validate_unique_items(
-            ingredients, 'Ингредиенты'
+            ingredients, 'Продукты'
 
         )
         tags = validated_data['tags']
@@ -230,16 +233,16 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         self.create_ingredients(recipe, ingredients)
         return recipe
 
-    def update(self, instance, validated_data):
-        instance.tags.clear()
-        instance.ingredienttorecipe.all().delete()
-        instance.tags.set(validated_data.pop('tags'))
+    def update(self, recipe, validated_data):
+        recipe.tags.clear()
+        recipe.ingredienttorecipe.all().delete()
+        recipe.tags.set(validated_data.pop('tags'))
         ingredients = validated_data.pop('ingredients')
-        self.create_ingredients(instance, ingredients)
-        return super().update(instance, validated_data)
+        self.create_ingredients(recipe, ingredients)
+        return super().update(recipe, validated_data)
 
-    def to_representation(self, instance):
-        return RecipeReadSerializer(instance, context={
+    def to_representation(self, recipe):
+        return RecipeReadSerializer(recipe, context={
             'request': self.context.get('request')
         }).data
 

@@ -10,5 +10,5 @@ class Command(BaseCommand):
         with open('data/tags.json', encoding='utf-8') as data_file_tags:
             tags_data = json.loads(data_file_tags.read())
             Tag.objects.bulk_create(
-                [Tag(**data) for data in tags_data], batch_size=1000
+                Tag(**data) for data in tags_data
             )
