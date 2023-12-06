@@ -41,7 +41,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'tags'
     )
     list_filter = ('author', 'tags')
-    inlines = (IngredientInline,)
+    inlines = (IngredientInline, )
     empty_value_display = 'Пусто'
 
     @admin.display(description='Избранное')
