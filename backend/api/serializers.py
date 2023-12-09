@@ -215,59 +215,67 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             raise ValidationError('Нужна картинка рецепта/блюда!')
         return image
 
-    @staticmethod
-    def create_ingredients(recipe, ingredients):
-        IngredientRecipe.objects.bulk_create(
-            IngredientRecipe(
-                ingredient=ingredient_data['id'],
-                amount=ingredient_data['amount'],
-                recipe=recipe,
-            ) for ingredient_data in ingredients
-        )
+    def validate_tags(self, value):
+        if not value:
+            raise ValidationError(
+                'Нужно добавить хотя бы один тег.'
+            )
+
+        return value
+
+    def validate_ingredients(self, value):
+        if not value:
+            raise ValidationError(
+                'Нужно добавить хотя бы один ингредиент.'
+            )
+
+        ingredients = [item['id'] for item in value]
+        for ingredient in ingredients:
+            if ingredients.count(ingredient) > 1:
+                raise ValidationError(
+                    'У рецепта не может быть два одинаковых ингредиента.'
+                )
+
+        return value
 
     def create(self, validated_data):
+        author = self.context.get('request').user
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
+
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        self.create_ingredients(recipe, ingredients)
+
+        for ingredient in ingredients:
+            amount = ingredient['amount']
+            ingredient = get_object_or_404(Ingredient, pk=ingredient['id'].id)
+
+            IngredientRecipe.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                amount=amount
+            )
+
         return recipe
 
     def update(self, instance, validated_data):
-        print(instance, validated_data)
         tags = validated_data.pop('tags', None)
-        ingredients_data = validated_data.pop('ingredients', None)
-
-        # Обновление тегов (если необходимо)
         if tags is not None:
             instance.tags.set(tags)
 
-        # Обновление ингредиентов и добавление новых
-        if ingredients_data is not None:
-            # Список ID существующих ингредиентов в рецепте
-            existing_ingredient_ids = list(
-                instance.ingredients.values_list('id', flat=True)
-            )
+        ingredients = validated_data.pop('ingredients', None)
+        if ingredients is not None:
+            instance.ingredients.clear()
 
-            # Обновление существующих ингредиентов и добавление новых
-            for ingredient_data in ingredients_data:
-                ingredient_id = ingredient_data['id'].id
-                amount = ingredient_data['amount']
+            for ingredient in ingredients:
+                amount = ingredient['amount']
+                ingredient = get_object_or_404(Ingredient, pk=ingredient['id'].id)
 
-                if ingredient_id in existing_ingredient_ids:
-                    # Обновление существующего ингредиента
-                    ingredient_recipe = IngredientRecipe.objects.get(
-                        ingredient=ingredient_id, recipe=instance
-                    )
-                    ingredient_recipe.amount = amount
-                    ingredient_recipe.save()
-                else:
-                    # Добавление нового ингредиента к рецепту
-                    IngredientRecipe.objects.create(
-                        ingredient_id=ingredient_id,
-                        recipe=instance,
-                        amount=amount
-                    )
+                IngredientRecipe.objects.update_or_create(
+                    recipe=instance,
+                    ingredient=ingredient,
+                    defaults={'amount': amount}
+                )
 
         return super().update(instance, validated_data)
 
