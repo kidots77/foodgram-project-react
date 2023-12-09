@@ -233,13 +233,35 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         self.create_ingredients(recipe, ingredients)
         return recipe
 
-    def update(self, recipe, validated_data):
-        recipe.tags.clear()
-        recipe.ingredienttorecipe.all().delete()
-        recipe.tags.set(validated_data.pop('tags'))
-        ingredients = validated_data.pop('ingredients')
-        self.create_ingredients(recipe, ingredients)
-        return super().update(recipe, validated_data)
+    def update(self, instance, validated_data):
+        print(instance, validated_data)
+        tags = validated_data.pop('tags', None)
+        ingredients_data = validated_data.pop('ingredients', None)
+
+        # Обновление тегов (если необходимо)
+        if tags is not None:
+            instance.tags.set(tags)
+
+        # Обновление ингредиентов и добавление новых
+        if ingredients_data is not None:
+            # Список ID существующих ингредиентов в рецепте
+            existing_ingredient_ids = list(instance.ingredients.values_list('id', flat=True))
+
+            # Обновление существующих ингредиентов и добавление новых
+            for ingredient_data in ingredients_data:
+                ingredient_id = ingredient_data['id'].id
+                amount = ingredient_data['amount']
+
+                if ingredient_id in existing_ingredient_ids:
+                    # Обновление существующего ингредиента
+                    ingredient_recipe = IngredientRecipe.objects.get(ingredient=ingredient_id, recipe=instance)
+                    ingredient_recipe.amount = amount
+                    ingredient_recipe.save()
+                else:
+                    # Добавление нового ингредиента к рецепту
+                    IngredientRecipe.objects.create(ingredient_id=ingredient_id, recipe=instance, amount=amount)
+
+        return super().update(instance, validated_data)
 
     def to_representation(self, recipe):
         return RecipeReadSerializer(recipe, context={
