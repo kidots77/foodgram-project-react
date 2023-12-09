@@ -245,7 +245,9 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         # Обновление ингредиентов и добавление новых
         if ingredients_data is not None:
             # Список ID существующих ингредиентов в рецепте
-            existing_ingredient_ids = list(instance.ingredients.values_list('id', flat=True))
+            existing_ingredient_ids = list(
+                instance.ingredients.values_list('id', flat=True)
+            )
 
             # Обновление существующих ингредиентов и добавление новых
             for ingredient_data in ingredients_data:
@@ -254,12 +256,18 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
 
                 if ingredient_id in existing_ingredient_ids:
                     # Обновление существующего ингредиента
-                    ingredient_recipe = IngredientRecipe.objects.get(ingredient=ingredient_id, recipe=instance)
+                    ingredient_recipe = IngredientRecipe.objects.get(
+                        ingredient=ingredient_id, recipe=instance
+                    )
                     ingredient_recipe.amount = amount
                     ingredient_recipe.save()
                 else:
                     # Добавление нового ингредиента к рецепту
-                    IngredientRecipe.objects.create(ingredient_id=ingredient_id, recipe=instance, amount=amount)
+                    IngredientRecipe.objects.create(
+                        ingredient_id=ingredient_id,
+                        recipe=instance,
+                        amount=amount
+                    )
 
         return super().update(instance, validated_data)
 
